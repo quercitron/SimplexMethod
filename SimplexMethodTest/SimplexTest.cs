@@ -18,7 +18,7 @@ namespace SimplexMethodTest
             var b = new[] { 3D };
             var c = new[] { 1D, 2 };
             var result = sm.Simplex(A, b, c);
-            var answer = new double[] { 0, 3, 0 };
+            var answer = new double[] { 0, 3 };
             CollectionAssert.AreEqual(answer, result);
         }
         
@@ -30,7 +30,7 @@ namespace SimplexMethodTest
             var b = new[] { 30D, 24, 36 };
             var c = new[] { 3D, 1, 2 };
             var result = sm.Simplex(A, b, c);
-            var answer = new double[] { 8, 4, 0, 18, 0, 0 };
+            var answer = new double[] { 8, 4, 0 };
             CollectionAssert.AreEqual(answer, result);
         }
 
@@ -42,7 +42,19 @@ namespace SimplexMethodTest
             var b = new[] { 50D, 100, 25 };
             var c = new[] { 1D, 1, 1, 1 };
             var result = sm.Simplex(A, b, c);
-            var answer = new double[] { 15.9090909090909, 10.2272727272727, 2.84090909090909, 0, 0, 0, 0 };
+            var answer = new double[] { 15.9090909090909, 10.2272727272727, 2.84090909090909, 0 };
+            DoubleCollectionAssert(answer, result);
+        }
+
+        [TestMethod]
+        public void TestInitialization1()
+        {
+            var sm = new SimplexMethod.SimplexMethod();
+            var A = new[,] { { 2D, -1 }, { 1, -5 } };
+            var b = new[] { 2D, -4 };
+            var c = new[] { 2D, -1 };
+            var result = sm.Simplex(A, b, c);
+            var answer = new double[] {14D / 9, 10D / 9};
             DoubleCollectionAssert(answer, result);
         }
 
@@ -50,7 +62,7 @@ namespace SimplexMethodTest
         {
             if (expected.Count != actual.Count)
             {
-                throw new AssertFailedException("collections length are not equal");
+                throw new AssertFailedException("Different number of elements.");
             }
 
             for (int i = 0; i < expected.Count; i++)

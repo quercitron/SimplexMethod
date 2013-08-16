@@ -119,7 +119,7 @@ namespace SimplexMethod
                 cNew = new double[n];
                 for (int i = 0; i < n; i++)
                 {
-                    if (B.Contains(i))
+                    if (!B.Contains(i))
                     {
                         cNew[i] += c[i];
                     }
@@ -141,14 +141,13 @@ namespace SimplexMethod
                     N.Remove(n);
                 }
 
-                ANew = new double[m, n + m];
+                ANew = new double[m, n];
                 for (int i = 0; i < m; i++)
                 {
                     for (int j = 0; j < n; j++)
                     {
                         ANew[i, j] = A[i, j];
                     }
-                    ANew[i, n + i] = 0;
                 }
                 A = ANew;
             }
@@ -190,8 +189,8 @@ namespace SimplexMethod
                 c = result.c;
             }
 
-            var x = new double[n];
-            for (int i = 0; i < n; i++)
+            var x = new double[n - m];
+            for (int i = 0; i < n - m; i++)
             {
                 if (B.Contains(i))
                 {
