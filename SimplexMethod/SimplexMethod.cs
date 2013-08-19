@@ -8,7 +8,9 @@ namespace SimplexMethod
 {
     public class SimplexMethod : ISimplexMethod
     {
-        public double[] Simplex(double[,] A, double[] b, double[] c)
+        public const double Eps = 1e-9;
+
+        public SimplexMethodResult Simplex(double[,] A, double[] b, double[] c)
         {
             var n = A.GetLength(1);
             var m = A.GetLength(0);
@@ -45,8 +47,8 @@ namespace SimplexMethod
 
             int l;
             int e;
-            double v;
-            if (!b.All(value => value >= 0))
+            double v = 0;
+            if (!b.All(value => value > -Eps))
             {
                 ANew = new double[m, n + 1];
                 for (int i = 0; i < m; i++)
@@ -68,7 +70,7 @@ namespace SimplexMethod
                 l = -1;
                 foreach (var i in B)
                 {
-                    if (b[id[i]] < 0 && (l == -1 || b[id[l]] > b[id[i]]))
+                    if (b[id[i]] < -Eps && (l == -1 || b[id[l]] > b[id[i]]))
                     {
                         l = i;
                     }
@@ -80,12 +82,12 @@ namespace SimplexMethod
                 b = result.b;
                 cNew = result.c;
 
-                while (N.Any(i => cNew[i] > 0))
+                while (N.Any(i => cNew[i] > Eps))
                 {
                     e = -1;
                     foreach (var i in N)
                     {
-                        if (cNew[i] > 0)
+                        if (cNew[i] > Eps)
                         {
                             e = i;
                             break;
@@ -95,7 +97,7 @@ namespace SimplexMethod
                     l = -1;
                     foreach (var i in B)
                     {
-                        if (A[id[i], e] > 0 && (l == -1 || b[id[l]] / A[id[l], e] > b[id[i]] / A[id[i], e]))
+                        if (A[id[i], e] > Eps && (l == -1 || b[id[l]] / A[id[l], e] > b[id[i]] / A[id[i], e]))
                         {
                             l = i;
                         }
@@ -103,7 +105,7 @@ namespace SimplexMethod
 
                     if (l == -1)
                     {
-                        return null;
+                        return new SimplexMethodResult { Status = SimplexMethodResultStatus.Unlimited };
                     }
                     result = Pivot(N, B, A, id, b, cNew, ref v, l, e);
                     A = result.A;
@@ -111,9 +113,45 @@ namespace SimplexMethod
                     cNew = result.c;
                 }
 
-                if (v < 0)
+                if (v < - Eps)
                 {
-                    return null;
+                    return new SimplexMethodResult { Status = SimplexMethodResultStatus.NoSolution };
+                }
+
+                if (B.Contains(n))
+                {
+                    B.Remove(n);
+                    e = -1;
+                    foreach (var j in N)
+                    {
+                        if (Math.Abs(A[id[n], j]) > Eps)
+                        {
+                            e = j;
+                            break;
+                        }
+                    }
+                    var d = A[id[n], e];
+                    for (int j = 0; j < n; j++)
+                    {
+                        A[id[n], j] /= d;
+                    }
+                    A[id[n], e] = 0;
+                    foreach (var i in B)
+                    {
+                        d = -A[id[i], e];
+                        for (int j = 0; j < n; j++)
+                        {
+                            A[id[i], j] += d * A[id[n], j];
+                        }
+                        A[id[i], e] = 0;
+                    }
+                    N.Remove(e);
+                    B.Add(e);
+                    id[e] = id[n];
+                }
+                else if (N.Contains(n))
+                {
+                    N.Remove(n);
                 }
 
                 cNew = new double[n];
@@ -129,17 +167,10 @@ namespace SimplexMethod
                         {
                             cNew[j] -= c[i] * A[id[i], j];
                         }
+                        v += c[i] * b[id[i]];
                     }
                 }
                 c = cNew;
-                if (B.Contains(n))
-                {
-                    B.Remove(n);
-                }
-                if (N.Contains(n))
-                {
-                    N.Remove(n);
-                }
 
                 ANew = new double[m, n];
                 for (int i = 0; i < m; i++)
@@ -152,18 +183,12 @@ namespace SimplexMethod
                 A = ANew;
             }
 
-            v = 0;
-            foreach (var i in B)
-            {
-                v += c[i] * b[id[i]];
-            }
-
-            while (N.Any(i => c[i] > 0))
+            while (N.Any(i => c[i] > Eps))
             {
                 e = -1;
                 foreach (var i in N)
                 {
-                    if (c[i] > 0)
+                    if (c[i] > Eps)
                     {
                         e = i;
                         break;
@@ -173,7 +198,7 @@ namespace SimplexMethod
                 l = -1;
                 foreach (var i in B)
                 {
-                    if (A[id[i], e] > 0 && (l == -1 || b[id[l]] / A[id[l], e] > b[id[i]] / A[id[i], e]))
+                    if (A[id[i], e] > Eps && (l == -1 || b[id[l]] / A[id[l], e] > b[id[i]] / A[id[i], e]))
                     {
                         l = i;
                     }
@@ -181,7 +206,7 @@ namespace SimplexMethod
 
                 if (l == -1)
                 {
-                    return null;
+                    return new SimplexMethodResult { Status = SimplexMethodResultStatus.Unlimited };
                 }
                 var result = Pivot(N, B, A, id, b, c, ref v, l, e);
                 A = result.A;
@@ -198,7 +223,7 @@ namespace SimplexMethod
                 }
             }
 
-            return x;
+            return new SimplexMethodResult { Status = SimplexMethodResultStatus.Ok, Value = v, Solution = x };
         }
 
         private PivotResult Pivot(ISet<int> N, ISet<int> B, double[,] A, IList<int> id, IList<double> b, IList<double> c, ref double v, int l, int e)
@@ -253,6 +278,22 @@ namespace SimplexMethod
 
             return new PivotResult { A = ANew, c = cNew, b = bNew };
         }
+    }
+
+    public class SimplexMethodResult
+    {
+        public SimplexMethodResultStatus Status { get; set; }
+
+        public double Value { get; set; }
+
+        public double[] Solution { get; set; }
+    }
+
+    public enum SimplexMethodResultStatus
+    {
+        Ok,
+        NoSolution,
+        Unlimited
     }
 
     internal class PivotResult

@@ -2,6 +2,6 @@
 {
     public interface ISimplexMethod
     {
-        double[] Simplex(double[,] initA, double[] initb, double[] c);
+        SimplexMethodResult Simplex(double[,] initA, double[] initb, double[] c);
     }
 }
